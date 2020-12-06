@@ -5,70 +5,67 @@
 #include <string.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <netdb.h>
 #include <unistd.h>
 #define MAX_CUE 3
 
 
 int main(int argc, char * argv[]){ 
 
-
-
-struct sockaddr_in * addr =  (struct sockaddr_in * )malloc(sizeof(struct sockaddr_in)); 
-struct in_addr * inad = (struct in_addr *)malloc(sizeof(struct in_addr));
-
-addr->sin_family  = AF_INET; 
-addr->sin_port = htons(55000); // this port value will be raead in as an arg but I'm assigning one for test purposes 
-
-socklen_t addr_size = (socklen_t)sizeof(*(addr));  
-
-//socklen_t * ptr  = &(addr_size) ; 
-
-//*ptr = addr_size;
-
-
-
-int sock_fd = socket(AF_INET, SOCK_STREAM, 0); 
-
-if(sock_fd <0){ 
-return 0;
-}
-
-struct sockaddr * ptr2 = (struct sockaddr *)addr;
-
 /*
-int error = bind(sock_fd, ptr2 , addr_size);
+copied this code from lecture to use as a test client for the server we are going to make.
+
+*/
+
+int sockfd = -1; 
+int portno = -1;
+int n = -1;
+char buffer[256]; 
+struct sockaddr_in serverAddressInfo; 
+struct hostent * serverIPAddress;
 
 
-if(error < 0){ 
-	return 0;
-}
-
-
-
-int err = listen(sock_fd,MAX_CUE); 
-
-if(err <0){ 
-	return 0;
-}
-
-*/ 
-
-int accept_soc = connect(sock_fd, (struct sockaddr * )addr , addr_size ); 
-
-if(accept_soc<0){ 
+if(argc< 3){ // user didn't enter enough arguments 
 return 0;
 }
-
-char arr[100]; 
-
-write(accept_soc, (void *)arr , sizeof(char)*100);
+portno = atoi(argv[2]); 
 
 
-close(accept_soc);
+serverIPAddress = gethostbyname(argv[1]); 
+
+
+if(serverIPAddress = NULL){ 
+	printf("no such host");
+	return 0;
+}
+
+
+sockfd = socket(AF_INET,SOCK_STREAM,0); 
+
+if(sockfd<0){ 
+	return 0;
+}
+
+
+bzero((char *)&serverAddressInfo, sizeof(serverAddressInfo)); 
+
+serverAddressInfo.sin_family = AF_INET;
+
+serverAddressInfo.sin_port = htons(portno);
+
+bcopy( (char *)serverIPAddress->h_addr,(char *)&serverAddressInfo.sin_addr.s_addr, serverIPAddress->h_length );
+
+
+if(connect(sockfd, (struct sockaddr *)&serverAddressInfo, sizeof(serverAddressInfo)) < 0 ){ 
+	return 0;
+}
+
+
 
 
 }
  
+
 
 
 

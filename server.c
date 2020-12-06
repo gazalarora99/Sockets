@@ -15,67 +15,63 @@
                struct in_addr sin_addr;    internet address 
            };
 */
+
+
+
+
+/* 
+note to self, if i run the program and it continues to run. Don't worry just yet sockets will wait until 
+they recieve an incomming request 
+*/
+
+
 int main(int argc, char * argv[]){ 
 
+int sockfd = -1; 
+int newsockfd = -1; 
+int portno = -1; 
+int clilen = -1; 
+int n = -1; 
+char buffer[256]; 
 
-struct sockaddr_in * server_addr =  (struct sockaddr_in * )malloc(sizeof(struct sockaddr_in)); 
-struct in_addr * server_inad = (struct in_addr *)malloc(sizeof(struct in_addr));
+struct sockaddr_in serverAddressInfo; 
+struct sockaddr_in clientAddressInfo; 
 
-
-struct sockaddr_in * client_addr =  (struct sockaddr_in * )malloc(sizeof(struct sockaddr_in));
-struct in_addr * client_inad = (struct in_addr *)malloc(sizeof(struct in_addr)); 
-
-server_addr->sin_family  = AF_INET; 
-server_addr->sin_port = htons(55000); // this port value will be raead in as an arg but I'm assigning one for test purposes 
-
-
-
-
-
-
-int server_soc = socket(AF_INET, SOCK_STREAM, 0); 
-
-if(sock_fd <0){ 
-return 0;
+if(argc<2){ 
+printf("Error"); 
+exit(1);
 }
 
-struct sockaddr * ptr2 = (struct sockaddr *)server_addr;
+//  read in IP address to connect to and port number from command line
+portno = atoi(argv[1]);
 
 
-int error = bind(server_soc, &(server_addr->sin_port) , addr_size);
+sockfd = socket(AF_INET, SOCK_STREAM, 0); 
+
+bzero( (char *)&serverAddressInfo, sizeof(serverAddressInfo)); 
+
+serverAddressInfo.sin_port = htons(portno); 
+
+serverAddressInfo.sin_family = AF_INET; 
 
 
-if(error < 0){ 
-	return 0;
-}
+/*This below statement means I am willing to acccept connections 
+from anyone*/
+serverAddressInfo.sin_addr.s_addr = INADDR_ANY; 
 
 
+if(bind(sockfd,(struct sockaddr *)&serverAddressInfo, sizeof(serverAddressInfo))<0){
+	
+		printf("error");
+	} 
 
-int err = listen(sock_fd,MAX_CUE); 
+listen(sockfd,0); 
 
-if(err <0){ 
-	return 0;
-}
+clilen = sizeof(clientAddressInfo); 
 
-
-int accept_soc = accept(sock_fd, (struct sockaddr * )client_addr , ptr ); 
-
-if(accept_soc<0){ 
-return 0;
-}
-
-char arr[100]; 
-
-read(accept_soc, (void *)arr , sizeof(char)*100);
-
-
-
-close(sock_fd); 
-close(accept_soc);
-free(addr);
-free(inad);
-
-
+/* should pass blank sock addre struct becuase we will need a place to store client
+info */
+newsockfd = accept(sockfd,(struct sockaddr *)&clientAddressInfo, &clilen);
 
 }
  
