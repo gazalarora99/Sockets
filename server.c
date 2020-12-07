@@ -6,23 +6,14 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <unistd.h>
-#define MAX_CUE 1 
-
-/*
- struct sockaddr_in {
-               sa_family_t    sin_family;  address family: AF_INET 
-               in_port_t      sin_port;    port in network byte order 
-               struct in_addr sin_addr;    internet address 
-           };
-*/
-
-
-
+#define MAX_CUE 2 
 
 /* 
 note to self, if i run the program and it continues to run. Don't worry just yet sockets will wait until 
 they recieve an incomming request 
 */
+
+
 
 
 int main(int argc, char * argv[]){ 
@@ -65,30 +56,35 @@ if(bind(sockfd,(struct sockaddr *)&serverAddressInfo, sizeof(serverAddressInfo))
 		printf("error");
 	} 
 
-listen(sockfd,0); 
+/*infinite loop to for server to keep listening and accepting requests from clients */
+while(1){
+				
+				listen(sockfd,MAX_CUE); 
 
-clilen = sizeof(clientAddressInfo); 
+				clilen = sizeof(clientAddressInfo); 
 
-/* should pass blank sock addre struct becuase we will need a place to store client
-info */
-newsockfd = accept(sockfd,(struct sockaddr *)&clientAddressInfo, &clilen);
+				/* should pass blank sock addre struct becuase we will need a place to store client
+				info */ 
+				
+				newsockfd = accept(sockfd,(struct sockaddr *)&clientAddressInfo, &clilen);
+				
+				n = read(newsockfd,buffer,255); 
 
-n = read(newsockfd,buffer,255); 
+				printf("buffer content %s \n", buffer);
 
-printf("buffer content %s \n", buffer);
+				bzero(buffer, 256); 
 
-bzero(buffer, 256); 
+				char * welcome = "welcome";
 
-char * welcome = "welcome";
+				int i =0; 
 
-int i =0; 
+				for(i;i<7;i++){ 
+					buffer[i] = *(welcome +i);
+				}
 
-for(i;i<7;i++){ 
-	buffer[i] = *(welcome +i);
-}
-
-n= write(newsockfd,buffer,255);
-
+				n= write(newsockfd,buffer,255);
+		
+	}
 
 }
  
