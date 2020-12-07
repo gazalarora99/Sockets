@@ -73,5 +73,22 @@ clilen = sizeof(clientAddressInfo);
 info */
 newsockfd = accept(sockfd,(struct sockaddr *)&clientAddressInfo, &clilen);
 
+n = read(newsockfd,buffer,255); 
+
+printf("buffer content %s \n", buffer);
+
+bzero(buffer, 256); 
+
+char * welcome = "welcome";
+
+int i =0; 
+
+for(i;i<7;i++){ 
+	buffer[i] = *(welcome +i);
+}
+
+n= write(newsockfd,buffer,255);
+
+
 }
  

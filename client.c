@@ -34,7 +34,7 @@ portno = atoi(argv[2]);
 serverIPAddress = gethostbyname(argv[1]); 
 
 
-if(serverIPAddress = NULL){ 
+if(serverIPAddress == NULL){ 
 	printf("no such host");
 	return 0;
 }
@@ -60,6 +60,24 @@ if(connect(sockfd, (struct sockaddr *)&serverAddressInfo, sizeof(serverAddressIn
 	return 0;
 }
 
+printf("enter the message:"); 
+
+bzero(buffer,256); 
+
+fgets(buffer,255,stdin); 
+
+n = write(sockfd,buffer,strlen(buffer)); 
+
+printf("buffer before %s", buffer);
+
+bzero(buffer, 256); 
+
+
+n = read(sockfd,buffer,255);  
+
+printf("%s\n",buffer); 
+
+return 0;
 
 
 
