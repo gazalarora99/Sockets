@@ -59,30 +59,26 @@ bcopy( (char *)serverIPAddress->h_addr,(char *)&serverAddressInfo.sin_addr.s_add
 if(connect(sockfd, (struct sockaddr *)&serverAddressInfo, sizeof(serverAddressInfo)) < 0 ){ 
 	return 0;
 }
-
-printf("enter the message:"); 
-
+ int count = 0;
+//printf("enter the message:"); 
+ while(1){
 bzero(buffer,256); 
+n = read(sockfd,buffer,255);
 
-fgets(buffer,255,stdin); 
+printf("%s\n",buffer);
+bzero(buffer, 256);
+ fgets(buffer,255,stdin); 
 
 n = write(sockfd,buffer,strlen(buffer)); 
 
-printf("buffer before %s", buffer);
+//printf("client: %s", buffer);
+ count++;
+ }
 
-bzero(buffer, 256); 
-
-
-n = read(sockfd,buffer,255);  
-
-printf("%s\n",buffer); 
-
+close(sockfd);
 return 0;
 
-
-
 }
- 
 
 
 
