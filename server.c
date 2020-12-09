@@ -32,7 +32,21 @@ int compare(char buffer[256], int c){
   return 0;
 }
 
-void error(char buffer[256], int expec_len, int msg_num){
+void check(int newsock, char* buffer, int expec_len, int msg_num){
+  buffer = (char*) malloc((expec_len+1)*sizeof(char));
+  buffer[expec_len] = '\0';
+  char * buf = (char*) malloc(2*sizeof(char));
+  buf[1] = '\0';
+  int n;
+  //  n = read(newsock, buf, 1);
+  //strcat(buffer,buf);
+  int i = 0;
+  while(i<expec_len && (n = read(newsock, buf, 1))>0){
+    strcat(buffer,buf);
+    i++;
+  }
+  printf("n: %d\n", n);
+  printf("buffer %s\n", buffer);
   if(buffer[0]=='E'){
     //received an error msg from client
   }
@@ -89,7 +103,7 @@ int newsockfd = -1;
 int portno = -1; 
 int clilen = -1; 
 int n = -1; 
-char buffer[256]; 
+char* buffer; 
 
 struct sockaddr_in serverAddressInfo; 
 struct sockaddr_in clientAddressInfo; 
@@ -122,42 +136,39 @@ if(bind(sockfd,(struct sockaddr *)&serverAddressInfo, sizeof(serverAddressInfo))
 		printf("error");
 	} 
 
-listen(sockfd,MAX_CUE);
+//listen(sockfd,MAX_CUE);
 
-clilen = sizeof(clientAddressInfo);
+//clilen = sizeof(clientAddressInfo);
 /* should pass blank sock addre struct becuase we will need a place to store client                                                                      
 info */
-newsockfd = accept(sockfd,(struct sockaddr *)&clientAddressInfo, &clilen);
+//newsockfd = accept(sockfd,(struct sockaddr *)&clientAddressInfo, &clilen);
  int count = 0;
 /*infinite loop to for server to keep listening and accepting requests from clients */
 while(1){
-  /*
+  
 				listen(sockfd,MAX_CUE); 
 
 				clilen = sizeof(clientAddressInfo); 
 
 				/* should pass blank sock addre struct becuase we will need a place to store client
 				info 
-  
+				*/
 				
   				newsockfd = accept(sockfd,(struct sockaddr *)&clientAddressInfo, &clilen);
-  */
-  bzero(buffer, 256);
   
-char * welcome = "REG|13|Knock, Knock.|\0";
-
-                                int i;
-
-                                for(i=0;i<22;i++){
+				//char * welcome = "REG|13|Knock, Knock.|\0";
+				buffer = (char*) malloc(22*sizeof(char));
+				strcpy(buffer, "REG|13|Knock, Knock.|\0");
+			          /*for(i=0;i<22;i++){
                                         buffer[i] = *(welcome +i);
-                                }
-				n = write(newsockfd,buffer,255);
-				printf("Knock, Knock.\n");
-				bzero(buffer, 256);
-				n = read(newsockfd,buffer,255);
-				//	printf("%s \n", buffer); 
+                                }*/
+				n = write(newsockfd,buffer,22);
+				printf("%s\n", buffer);
+				free(buffer);
+
+				check(newsockfd, buffer, 20, 1); //1 for the msg who's there
 				
-				if(compare(buffer, 1) == -1){
+				/*if(compare(buffer, 1) == -1){
 				  //check type of error
 				}
 				else{
@@ -165,12 +176,12 @@ char * welcome = "REG|13|Knock, Knock.|\0";
 				  
 				  printf("Who's there?\n");
 				}
-				
+				*/
 				bzero(buffer, 256);
 
 				char* stud = "REG|8|Student.|\0";
 				
-				for(i=0; i<16; i++){
+				for(int i=0; i<16; i++){
 				  buffer[i] = *(stud+i);
 				}
 				n = write(newsockfd,buffer,255);
@@ -189,7 +200,7 @@ char * welcome = "REG|13|Knock, Knock.|\0";
 				
 				bzero(buffer, 256);
 				char* punch = "REG|14|Systems Master.|\0";
-				for(i = 0 ; i < 24 ; i++){
+				for(int i = 0 ; i < 24 ; i++){
 				  buffer[i] = *(punch+i);
 				}
 				n = write(newsockfd,buffer,255);
@@ -201,9 +212,10 @@ char * welcome = "REG|13|Knock, Knock.|\0";
 				  //getMsg(buffer, 3);
 				  printf("%s \n", buffer);
 				}
+				 close(newsockfd);
 				//				bzero(buffer, 256);
  }			        
- close(newsockfd);
+// close(newsockfd);
  close(sockfd);
 }
  
