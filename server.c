@@ -1,4 +1,5 @@
 #include <sys/socket.h>
+#include <sys/ioctl.h>
 #include <sys/un.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -6,6 +7,8 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
 #define MAX_CUE 2 
 
 /* 
@@ -38,15 +41,34 @@ void check(int newsock, char* buffer, int expec_len, int msg_num){
   char * buf = (char*) malloc(2*sizeof(char));
   buf[1] = '\0';
   int n;
-  //  n = read(newsock, buf, 1);
-  //strcat(buffer,buf);
-  int i = 0;
-  while(i<expec_len && (n = read(newsock, buf, 1))>0){
-    strcat(buffer,buf);
-    i++;
+  int mode = 1;
+  //  n =  ioctl(newsock,FIONBIO,(char*) &mode);
+  //  ioctl(newsock,FIONREAD,(char*) &n);
+  //fcntl(newsock,F_SETFL,O_NONBLOCK);
+  //printf("n: %d\n", n);
+  n = read(newsock, buf, 1);
+  strcat(buffer,buf);
+  fcntl(newsock,F_SETFL,O_NONBLOCK);    
+  int i=1;
+  int end;
+  // if(n != expec_len) end = n;
+  // else end = expec_len;
+  while(i<expec_len){
+    //    strcat(buffer,buf);
+    // printf("buffer %s\n", buffer);
+    //i++;
+     n = read(newsock, buf, 1);
+     if(n < 0) { break; }
+     strcat(buffer,buf);
+     printf("n: %d, buffer %s\n", n, buffer);
+     i++;
   }
+  if(errno==EAGAIN) puts("rec error");
   printf("n: %d\n", n);
   printf("buffer %s\n", buffer);
+  free(buffer);
+  free(buf);
+  /*
   if(buffer[0]=='E'){
     //received an error msg from client
   }
@@ -94,6 +116,7 @@ void check(int newsock, char* buffer, int expec_len, int msg_num){
   else{
     //missing msg type
   }
+  */
 }
 
 int main(int argc, char * argv[]){ 
@@ -142,7 +165,7 @@ if(bind(sockfd,(struct sockaddr *)&serverAddressInfo, sizeof(serverAddressInfo))
 /* should pass blank sock addre struct becuase we will need a place to store client                                                                      
 info */
 //newsockfd = accept(sockfd,(struct sockaddr *)&clientAddressInfo, &clilen);
- int count = 0;
+ int mode = 1;
 /*infinite loop to for server to keep listening and accepting requests from clients */
 while(1){
   
@@ -155,7 +178,7 @@ while(1){
 				*/
 				
   				newsockfd = accept(sockfd,(struct sockaddr *)&clientAddressInfo, &clilen);
-  
+				//ioctl(newsockfd,FIONBIO,(char*) &mode);
 				//char * welcome = "REG|13|Knock, Knock.|\0";
 				buffer = (char*) malloc(22*sizeof(char));
 				strcpy(buffer, "REG|13|Knock, Knock.|\0");

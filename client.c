@@ -1,6 +1,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -59,6 +60,7 @@ bcopy( (char *)serverIPAddress->h_addr,(char *)&serverAddressInfo.sin_addr.s_add
 if(connect(sockfd, (struct sockaddr *)&serverAddressInfo, sizeof(serverAddressInfo)) < 0 ){ 
 	return 0;
 }
+// fcntl(sockfd,F_SETFL,O_NONBLOCK);
  int count = 0;
 //printf("enter the message:"); 
  while(1){
@@ -69,7 +71,7 @@ printf("%s\n",buffer);
 bzero(buffer, 256);
  fgets(buffer,255,stdin); 
 
-n = write(sockfd,buffer,strlen(buffer)); 
+ n = write(sockfd,buffer,strlen(buffer)); 
 
 //printf("client: %s", buffer);
  count++;
