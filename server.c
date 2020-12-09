@@ -37,9 +37,11 @@ int compare(char buffer[256], int c){
 
 void check(int newsock, char* buffer, int expec_len, int msg_num){
   buffer = (char*) malloc((expec_len+1)*sizeof(char));
-  buffer[expec_len] = '\0';
+  bzero(buffer,expec_len+1);
+	buffer[expec_len] = '\0';
   char * buf = (char*) malloc(2*sizeof(char));
-  buf[1] = '\0';
+  bzero(buf,2);// my edit
+	buf[1] = '\0';
   int n;
   int mode = 1;
   //  n =  ioctl(newsock,FIONBIO,(char*) &mode);
@@ -59,7 +61,7 @@ void check(int newsock, char* buffer, int expec_len, int msg_num){
     //i++;
      n = read(newsock, buf, 1);
      if(n < 0) { break; }
-     strcat(buffer,buf);
+    buffer = strcat(buffer,buf);
      printf("n: %d, buffer %s\n", n, buffer);
      i++;
   }
@@ -167,6 +169,7 @@ info */
 //newsockfd = accept(sockfd,(struct sockaddr *)&clientAddressInfo, &clilen);
  int mode = 1;
 /*infinite loop to for server to keep listening and accepting requests from clients */
+buffer = (char*) malloc(25*sizeof(char));
 while(1){
   
 				listen(sockfd,MAX_CUE); 
@@ -180,14 +183,15 @@ while(1){
   				newsockfd = accept(sockfd,(struct sockaddr *)&clientAddressInfo, &clilen);
 				//ioctl(newsockfd,FIONBIO,(char*) &mode);
 				//char * welcome = "REG|13|Knock, Knock.|\0";
-				buffer = (char*) malloc(22*sizeof(char));
+			//	buffer = (char*) malloc(22*sizeof(char));
 				strcpy(buffer, "REG|13|Knock, Knock.|\0");
 			          /*for(i=0;i<22;i++){
                                         buffer[i] = *(welcome +i);
                                 }*/
-				n = write(newsockfd,buffer,22);
+				n = write(newsockfd,buffer,24);
 				printf("%s\n", buffer);
-				free(buffer);
+				
+				//free(buffer); //this doesn't seem right
 
 				check(newsockfd, buffer, 20, 1); //1 for the msg who's there
 				
@@ -200,17 +204,18 @@ while(1){
 				  printf("Who's there?\n");
 				}
 				*/
-				bzero(buffer, 256);
+				bzero(buffer, 24);
 
 				char* stud = "REG|8|Student.|\0";
 				
 				for(int i=0; i<16; i++){
 				  buffer[i] = *(stud+i);
 				}
-				n = write(newsockfd,buffer,255);
-                                printf("Student.\n");
-                                bzero(buffer, 256);
-				n = read(newsockfd,buffer,255);
+				
+				n = write(newsockfd,buffer,24);
+       	printf("Student.\n");
+        bzero(buffer, 24);
+				n = read(newsockfd,buffer,24);
 				//printf("%s \n", buffer); 
    				if(compare(buffer,2) == -1){
 				  //check type of error
@@ -221,22 +226,22 @@ while(1){
 				  printf("Student, who?\n");
 				}
 				
-				bzero(buffer, 256);
+				bzero(buffer, 24);
 				char* punch = "REG|14|Systems Master.|\0";
 				for(int i = 0 ; i < 24 ; i++){
 				  buffer[i] = *(punch+i);
 				}
-				n = write(newsockfd,buffer,255);
+				n = write(newsockfd,buffer,24);
 				printf("Systems Master.\n");
-				bzero(buffer, 256);
+				bzero(buffer, 22);
 
-				n = read(newsockfd,buffer,255);
+				n = read(newsockfd,buffer,24);
 				if(buffer[0]=='R'){
 				  //getMsg(buffer, 3);
 				  printf("%s \n", buffer);
 				}
 				 close(newsockfd);
-				//				bzero(buffer, 256);
+				bzero(buffer, 24);
  }			        
 // close(newsockfd);
  close(sockfd);
