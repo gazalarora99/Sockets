@@ -10,7 +10,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #define MAX_CUE 2 
-
+#define IN_RANGE(X) (X =='5' || X == '4' || X == '3' || X == '2' || X == '1' || X == '0')  
+/* in range macro is used to check number for error message */
 /* 
 note to self, if i run the program and it continues to run. Don't worry just yet sockets will wait until 
 they recieve an incomming request 
@@ -74,14 +75,39 @@ char* check(int newsock, char* buffer, int expec_len, int msg_num){
   //free(buffer);
   //  free(buf);
   
-  if(buffer[0]=='E' && buffer[1] == 'R' && buffer[2]=='R' && buffer[3]!='|'){
+  if(buffer[0]=='E' && buffer[1] == 'R' && buffer[2]=='R' && buffer[3]!='|' && buffer[4] == 'M' && IN_RANGE(buffer[5])  ){ /*edited if statement */
     //received an error msg from client
     //res will be set to "close"
-    printf("Received error from client, closing connection: %s",buffer);
+   
+		/* my code I added below .Question is this when we would receive an error message from client?  
+		Also, was it a typo to have buffer[3] != '|'. That sort of confused me since the error message should have 
+		sepaarators in it.
+		*/
+	
+		if( (buffer[6] == 'C' || buffer[6] == 'F') && buffer[7] == 'T'){ 
+				printf("Received error from client, closing connection: %s",buffer);
+    		result = malloc(6*sizeof(char));
+    		strcpy(result, "close\0");
+    		return result;
+		}
+		else if ( buffer[6] == 'L' && buffer[7] == 'N'){ 
+				printf("Received error from client, closing connection: %s",buffer);
+   			result = malloc(6*sizeof(char));
+    		strcpy(result, "close\0");
+    		return result;
+		}  
+		else{ 
+				printf("client sent error %s in incorrect format, closing connection", buffer);
+				return result;
+		}
+	
+	/* 
+	 printf("Received error from client, closing connection: %s",buffer);
     result = malloc(6*sizeof(char));
     strcpy(result, "close\0");
     return result;
-  }
+  */
+	}
   else if(buffer[0]=='R' && buffer[1]=='E' && buffer[2]=='G' && buffer[3]=='|'){
     
     int s=0; //keeps count of |
