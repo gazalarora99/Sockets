@@ -38,10 +38,11 @@ int compare(char buffer[256], int c){
 void check(int newsock, char* buffer, int expec_len, int msg_num){
   buffer = (char*) malloc((expec_len+1)*sizeof(char));
   bzero(buffer,expec_len+1);
-	buffer[expec_len] = '\0';
+  buffer[expec_len] = '\0';
+  
   char * buf = (char*) malloc(2*sizeof(char));
   bzero(buf,2);// my edit
-	buf[1] = '\0';
+  buf[1] = '\0';
   int n;
   int mode = 1;
   //  n =  ioctl(newsock,FIONBIO,(char*) &mode);
@@ -50,9 +51,10 @@ void check(int newsock, char* buffer, int expec_len, int msg_num){
   //printf("n: %d\n", n);
   n = read(newsock, buf, 1);
   strcat(buffer,buf);
-  fcntl(newsock,F_SETFL,O_NONBLOCK);    
+  //  fcntl(newsock,F_SETFL,O_NONBLOCK);    
+  ioctl(newsock,FIONBIO,(char*) &mode); 
   int i=1;
-  int end;
+  //int end;
   // if(n != expec_len) end = n;
   // else end = expec_len;
   while(i<expec_len){
@@ -61,13 +63,15 @@ void check(int newsock, char* buffer, int expec_len, int msg_num){
     //i++;
      n = read(newsock, buf, 1);
      if(n < 0) { break; }
-    buffer = strcat(buffer,buf);
+     buffer = strcat(buffer,buf);
      printf("n: %d, buffer %s\n", n, buffer);
      i++;
   }
   if(errno==EAGAIN) puts("rec error");
   printf("n: %d\n", n);
   printf("buffer %s\n", buffer);
+  mode = 0;
+  ioctl(newsock,FIONBIO,(char*) &mode);
   free(buffer);
   free(buf);
   /*
@@ -167,9 +171,10 @@ if(bind(sockfd,(struct sockaddr *)&serverAddressInfo, sizeof(serverAddressInfo))
 /* should pass blank sock addre struct becuase we will need a place to store client                                                                      
 info */
 //newsockfd = accept(sockfd,(struct sockaddr *)&clientAddressInfo, &clilen);
- int mode = 1;
+// int mode = 1;
 /*infinite loop to for server to keep listening and accepting requests from clients */
-buffer = (char*) malloc(25*sizeof(char));
+//buffer = (char*) malloc(25*sizeof(char));
+
 while(1){
   
 				listen(sockfd,MAX_CUE); 
@@ -181,67 +186,28 @@ while(1){
 				*/
 				
   				newsockfd = accept(sockfd,(struct sockaddr *)&clientAddressInfo, &clilen);
-				//ioctl(newsockfd,FIONBIO,(char*) &mode);
-				//char * welcome = "REG|13|Knock, Knock.|\0";
-			//	buffer = (char*) malloc(22*sizeof(char));
+			   	buffer = (char*) malloc(22*sizeof(char));
 				strcpy(buffer, "REG|13|Knock, Knock.|\0");
-			          /*for(i=0;i<22;i++){
-                                        buffer[i] = *(welcome +i);
-                                }*/
-				n = write(newsockfd,buffer,24);
+				n = write(newsockfd,buffer,21); //sending msg 0
 				printf("%s\n", buffer);
-				
-				//free(buffer); //this doesn't seem right
-
-				check(newsockfd, buffer, 20, 1); //1 for the msg who's there
-				
-				/*if(compare(buffer, 1) == -1){
-				  //check type of error
-				}
-				else{
-				  //print the buffer msg after separation
-				  
-				  printf("Who's there?\n");
-				}
-				*/
-				bzero(buffer, 24);
-
-				char* stud = "REG|8|Student.|\0";
-				
-				for(int i=0; i<16; i++){
-				  buffer[i] = *(stud+i);
-				}
-				
-				n = write(newsockfd,buffer,24);
-       	printf("Student.\n");
-        bzero(buffer, 24);
-				n = read(newsockfd,buffer,24);
-				//printf("%s \n", buffer); 
-   				if(compare(buffer,2) == -1){
-				  //check type of error
-				}
-				else{
-				  //print the buffer msg after separation
-				  
-				  printf("Student, who?\n");
-				}
-				
-				bzero(buffer, 24);
-				char* punch = "REG|14|Systems Master.|\0";
-				for(int i = 0 ; i < 24 ; i++){
-				  buffer[i] = *(punch+i);
-				}
-				n = write(newsockfd,buffer,24);
-				printf("Systems Master.\n");
-				bzero(buffer, 22);
-
-				n = read(newsockfd,buffer,24);
-				if(buffer[0]=='R'){
-				  //getMsg(buffer, 3);
-				  printf("%s \n", buffer);
-				}
-				 close(newsockfd);
-				bzero(buffer, 24);
+				free(buffer); 
+				check(newsockfd, buffer, 20, 1); //receiving msg 1 who's there
+			        
+				buffer = (char*) malloc(22*sizeof(char));
+				strcpy(buffer, "REG|13|JA Francisco.|\0");
+				n = write(newsockfd, buffer, 21); //sending msg 2
+				printf("%s\n", buffer);
+				free(buffer);
+				check(newsockfd, buffer, 26, 3); //receiving msg 3 JA Francisco, who?
+		        
+				buffer = (char*) malloc(28*sizeof(char));
+				strcpy(buffer,"REG|19|The Systems Master.|\0");
+				n = write(newsockfd,buffer,27); //sending msg 4
+				printf("%s\n", buffer);
+				free(buffer);
+				check(newsockfd, buffer, 256, 3); //receiving msg 5 expression of A/D/S
+				close(newsockfd);
+			       
  }			        
 // close(newsockfd);
  close(sockfd);
