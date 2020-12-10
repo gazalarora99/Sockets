@@ -75,7 +75,7 @@ char* check(int newsock, char* buffer, int expec_len, int msg_num){
   //free(buffer);
   //  free(buf);
   
-  if(buffer[0]=='E' && buffer[1] == 'R' && buffer[2]=='R' && buffer[3]!='|' && buffer[4] == 'M' && IN_RANGE(buffer[5])  ){ /*edited if statement */
+  if(buffer[0]=='E' && buffer[1] == 'R' && buffer[2]=='R' && buffer[3]=='|' && buffer[4] == 'M' && IN_RANGE(buffer[5]) && buffer[8]=='|'  ){ /*edited if statement */
     //received an error msg from client
     //res will be set to "close"
    
