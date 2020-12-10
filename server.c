@@ -9,7 +9,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
-#define MAX_CUE 2 
+#define MAX_CUE 2
+#define CR_RANGE(X) (X =='4' || X == '2' || X == '0')
 #define IN_RANGE(X) (X =='5' || X == '4' || X == '3' || X == '2' || X == '1' || X == '0')  
 /* in range macro is used to check number for error message */
 /* 
@@ -84,22 +85,23 @@ char* check(int newsock, char* buffer, int expec_len, int msg_num){
 		sepaarators in it.
 		*/
 	
-		if( (buffer[6] == 'C' || buffer[6] == 'F') && buffer[7] == 'T'){ 
-				printf("Received error from client, closing connection: %s",buffer);
-    		result = malloc(6*sizeof(char));
-    		strcpy(result, "close\0");
-    		return result;
-		}
-		else if ( buffer[6] == 'L' && buffer[7] == 'N'){ 
-				printf("Received error from client, closing connection: %s",buffer);
-   			result = malloc(6*sizeof(char));
-    		strcpy(result, "close\0");
-    		return result;
-		}  
-		else{ 
-				printf("client sent error %s in incorrect format, closing connection", buffer);
-				return result;
-		}
+    if( (buffer[6] == 'C' || buffer[6] == 'F') && buffer[7] == 'T' && CR_RANGE(buffer[5])){ 
+      printf("Received error %s from client, closing connection",buffer);
+      result = malloc(6*sizeof(char));
+      strcpy(result, "close\0");
+      return result;
+    }
+    else if ( buffer[6] == 'L' && buffer[7] == 'N' && CR_RANGE(buffer[5])){ 
+      printf("Received error %s from client, closing connection",buffer);
+      result = malloc(6*sizeof(char));
+      strcpy(result, "close\0");
+      return result;
+    }  
+    else{ 
+      printf("client sent error %s in incorrect format, closing connection", buffer);
+      strcpy(result, "close\0");
+      return result;
+    }
 	
 	/* 
 	 printf("Received error from client, closing connection: %s",buffer);
@@ -107,7 +109,7 @@ char* check(int newsock, char* buffer, int expec_len, int msg_num){
     strcpy(result, "close\0");
     return result;
   */
-	}
+  }
   else if(buffer[0]=='R' && buffer[1]=='E' && buffer[2]=='G' && buffer[3]=='|'){
     
     int s=0; //keeps count of |
@@ -235,7 +237,7 @@ char* check(int newsock, char* buffer, int expec_len, int msg_num){
       }
       //printf("str %s\n",str);
       if(msg_num==1 && strcmp(str,"Who's there?\0")==0){
-	printf("correct %s\n",str);
+	//printf("correct %s\n",str);
 	result = malloc(8*sizeof(char));
 	strcpy(result, "correct\0");
 	printf("%s\n",str);
@@ -244,7 +246,7 @@ char* check(int newsock, char* buffer, int expec_len, int msg_num){
 	return result;
       }
       else if(msg_num==3 && strcmp(str,"JA Francisco, who?\0")==0){
-	printf("correct %s\n",str);
+	//printf("correct %s\n",str);
 	result = malloc(8*sizeof(char));
         strcpy(result, "correct\0");
 	printf("%s\n",str);
@@ -263,14 +265,15 @@ char* check(int newsock, char* buffer, int expec_len, int msg_num){
 	    return result;
 	  }
 	}
-	if(str[length-2]!=33 && str[length-2]!=46 && str[length-2]!=63){
+	if(str[length-1]!=33 && str[length-1]!=46 && str[length-1]!=63){
 	  result = malloc(10*sizeof(char));
 	  strcpy(result, "ERR|M5CT|\0");
+	  //	  printf("%c\n", str[length-2]);
 	  free(buffer);
 	  free(str);
 	  return result;
 	}
-	printf("correct %s\n",str);
+	//printf("correct %s\n",str);
 	result = malloc(8*sizeof(char));
         strcpy(result, "correct\0");
 	printf("%s\n",str);
@@ -374,7 +377,7 @@ while(1){
 			   	buffer = (char*) malloc(22*sizeof(char));
 				strcpy(buffer, "REG|13|Knock, Knock.|\0");
 				n = write(newsockfd,buffer,21); //sending msg 0
-				printf("%s\n", buffer);
+				printf("Knock, Knock.\n");
 				free(buffer); 
 				res = check(newsockfd, buffer, 20, 1); //receiving msg 1 who's there
 				/* res == "close" means we received an error from client
@@ -402,7 +405,7 @@ while(1){
 				buffer = (char*) malloc(22*sizeof(char));
 				strcpy(buffer, "REG|13|JA Francisco.|\0");
 				n = write(newsockfd, buffer, 21); //sending msg 2
-				printf("%s\n", buffer);
+				printf("JA Francisco.\n");
 				free(buffer);
 				res = check(newsockfd, buffer, 26, 3); //receiving msg 3 JA Francisco, who?
 			        if(strcmp(res, "close") == 0){
@@ -422,7 +425,7 @@ while(1){
 				buffer = (char*) malloc(28*sizeof(char));
 				strcpy(buffer,"REG|19|The Systems Master.|\0");
 				n = write(newsockfd,buffer,27); //sending msg 4
-				printf("%s\n", buffer);
+				printf("The Systems Master.\n");
 				free(buffer);
 				res = check(newsockfd, buffer, 1024, 5); //receiving msg 5 expression of A/D/S
 				if(strcmp(res, "close") == 0){
