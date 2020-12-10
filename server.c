@@ -35,7 +35,17 @@ int compare(char buffer[256], int c){
   return 0;
 }
 
-void check(int newsock, char* buffer, int expec_len, int msg_num){
+/* Return res
+res == "close" means we received an error from client                                                               
+res == "correct" means we received what we expected so                  
+we can send a regular response.                                                                         
+res == "ERR|....|" means                                                
+we received an incorrectly formatted msg so we need to           
+send/report an error to our client which is stored in res, so                                  
+simply compare first three chars of res with ERR in while loop                                                       
+*/
+char* check(int newsock, char* buffer, int expec_len, int msg_num){
+  char* result; //we return this to our while loop
   buffer = (char*) malloc((expec_len+1)*sizeof(char));
   bzero(buffer,expec_len+1);
   buffer[expec_len] = '\0';
@@ -44,85 +54,243 @@ void check(int newsock, char* buffer, int expec_len, int msg_num){
   bzero(buf,2);// my edit
   buf[1] = '\0';
   int n;
-  int mode = 1;
-  //  n =  ioctl(newsock,FIONBIO,(char*) &mode);
-  //  ioctl(newsock,FIONREAD,(char*) &n);
-  //fcntl(newsock,F_SETFL,O_NONBLOCK);
-  //printf("n: %d\n", n);
-  n = read(newsock, buf, 1);
+  n = read(newsock, buf, 1); //wait for client's reply & read 1 byte
   strcat(buffer,buf);
-  //  fcntl(newsock,F_SETFL,O_NONBLOCK);    
-  ioctl(newsock,FIONBIO,(char*) &mode); 
+  fcntl(newsock,F_SETFL,O_NONBLOCK); //unblock read    
   int i=1;
-  //int end;
-  // if(n != expec_len) end = n;
-  // else end = expec_len;
   while(i<expec_len){
-    //    strcat(buffer,buf);
-    // printf("buffer %s\n", buffer);
-    //i++;
      n = read(newsock, buf, 1);
      if(n < 0) { break; }
      buffer = strcat(buffer,buf);
-     printf("n: %d, buffer %s\n", n, buffer);
+     // printf("n: %d, buffer %s\n", n, buffer);
      i++;
   }
-  if(errno==EAGAIN) puts("rec error");
-  printf("n: %d\n", n);
-  printf("buffer %s\n", buffer);
-  mode = 0;
-  ioctl(newsock,FIONBIO,(char*) &mode);
-  free(buffer);
-  free(buf);
-  /*
-  if(buffer[0]=='E'){
+  //  if(errno==EAGAIN) puts("rec error");
+  //printf("n: %d\n", n);
+  //  printf("buffer %s\n", buffer);
+  int flags = fcntl(newsock, F_GETFL);
+  flags &= ~O_NONBLOCK;
+  fcntl(newsock,F_SETFL,flags); //block read
+  //free(buffer);
+  //  free(buf);
+  
+  if(buffer[0]=='E' && buffer[1] == 'R' && buffer[2]=='R' && buffer[3]!='|'){
     //received an error msg from client
+    //res will be set to "close"
+    printf("Received error from client, closing connection: %s",buffer);
+    result = malloc(6*sizeof(char));
+    strcpy(result, "close\0");
+    return result;
   }
-  else if(buffer[0]=='R'){
-    //send error msg to client as server received incorrect msg
-    if(buffer[1]!='E' || buffer[2]!='G' || buffer[3]!='|'){
-      //format error
-      return;
-    }
-    else{
-      int s=0;
-      for(int i = 4 ; i < 255; i++){
+  else if(buffer[0]=='R' && buffer[1]=='E' && buffer[2]=='G' && buffer[3]=='|'){
+    
+    int s=0; //keeps count of |
+    for(int i = 4 ; i < strlen(buffer); i++){
 	if(buffer[i]=='|'){
 	  s++;
 	}
-      }
-      if(s!=2){
-	//missing | format error
-	return;
-      }
-      int k = 0;
+    }
+    if(s!=2){
+	//extra or missing | character so format error
+	result = malloc(10*sizeof(char));
+	if(msg_num == 1){
+	  strcpy(result, "ERR|M1FT|\0");
+	  free(buffer);
+	  return result;
+	}
+	else if(msg_num == 3){
+	  strcpy(result, "ERR|M3FT|\0");
+	  free(buffer);
+	  return result;
+	}
+	else if(msg_num == 5){
+	  strcpy(result, "ERR|M5FT|\0");
+	  free(buffer);
+	  return result;
+	}
+    }
+
+      int k = 0; //num of characters that represent length
       int length = 0;
-      for(int i = 4 ; i < 255; i++){
+      int pipe = -1;
+      for(int i = 4 ; i < strlen(buffer); i++){
+	//break once you find very next | character, ex reg|23|bla|
 	if(buffer[i]=='|'){
+	  pipe=i;
 	  break;
 	}
-	//if not a number then return error, ex reg|23yuh|hu|
+	//if not a number then return length error, ex reg|23yuh|hu|
+	if(buffer[i] < 48 && buffer[i] > 57){
+	  result = malloc(10*sizeof(char));
+	  if(msg_num == 1){
+	    strcpy(result, "ERR|M1LN|\0");
+	    free(buffer);
+	    return result;
+	  }
+	  else if(msg_num == 3){
+	    strcpy(result, "ERR|M3LN|\0");
+	    free(buffer);
+	    return result;
+	  }
+	  else if(msg_num == 5){
+	    strcpy(result, "ERR|M5LN|\0");
+	    free(buffer);
+	    return result;
+	  }
+	}
 	k++;
       }
       if(k==0) {
 	//missing length LN error
-	return;
+	result = malloc(10*sizeof(char));
+          if(msg_num == 1){
+            strcpy(result, "ERR|M1LN|\0");
+            free(buffer);
+            return result;
+          }
+          else if(msg_num == 3){
+            strcpy(result, "ERR|M3LN|\0");
+            free(buffer);
+            return result;
+          }
+          else if(msg_num == 5){
+            strcpy(result, "ERR|M5LN|\0");
+            free(buffer);
+            return result;
+          }
       }
-      for(int i = 4; i<4+k; i++){
-	//	length = ((10*length) + atoi(buffer[i]));	
-      }
-      if(length!=expec_len){
-	//LN error
-	return;
-      }
-      //compare strings now
-    }
 
+      //  if(pipe == (4+k)) puts("yes, pipe same as 4+k");
+      for(int i = 4; i<4+k; i++){
+	length = ((10*length) + (buffer[i]-'0'));	
+      }
+      //printf("len, %d\n", length);
+      if(msg_num == 1 && length!=12){
+	result = malloc(10*sizeof(char));
+	strcpy(result, "ERR|M1LN|\0");
+	free(buffer);
+	return result;
+      }
+      if(msg_num == 3 && length!=18){
+	result = malloc(10*sizeof(char));
+	strcpy(result, "ERR|M3LN|\0");
+	free(buffer);
+	return result;
+      }
+
+      if(buffer[pipe+length+1] != '|'){
+	//pipe | not present at expected position ex reg|3|ughh| or reg|3|ug| or reg|3|ug|h
+	//LN error
+	result = malloc(10*sizeof(char));
+          if(msg_num == 1){
+            strcpy(result, "ERR|M1LN|\0");
+            free(buffer);
+            return result;
+          }
+          else if(msg_num == 3){
+            strcpy(result, "ERR|M3LN|\0");
+            free(buffer);
+            return result;
+          }
+          else if(msg_num == 5){
+            strcpy(result, "ERR|M5LN|\0");
+            free(buffer);
+            return result;
+          }
+      }
+
+      //here if REG|numbers|blabla|
+      char* str = malloc((length+1)*sizeof(char));
+      //compare strings now
+      str[length] = '\0';
+      int i, j;
+      for(i = pipe+1, j=0; i < pipe+length+1, j<length; i++, j++){
+	str[j] = buffer[i];
+      }
+      //printf("str %s\n",str);
+      if(msg_num==1 && strcmp(str,"Who's there?\0")==0){
+	printf("correct %s\n",str);
+	result = malloc(8*sizeof(char));
+	strcpy(result, "correct\0");
+	printf("%s\n",str);
+	free(str);
+	free(buffer);
+	return result;
+      }
+      else if(msg_num==3 && strcmp(str,"JA Francisco, who?\0")==0){
+	printf("correct %s\n",str);
+	result = malloc(8*sizeof(char));
+        strcpy(result, "correct\0");
+	printf("%s\n",str);
+	free(str);
+	free(buffer);
+        return result;
+      }
+      else if(msg_num==5){
+	//extra char after last pipe ex reg|3|ugh|hhhh
+	if(buffer[pipe+length+2]!=0){
+	  result = malloc(10*sizeof(char));
+	  if(msg_num == 5){
+	    strcpy(result, "ERR|M5FT|\0");
+	    free(buffer);
+	    free(str);
+	    return result;
+	  }
+	}
+	if(str[length-2]!=33 && str[length-2]!=46 && str[length-2]!=63){
+	  result = malloc(10*sizeof(char));
+	  strcpy(result, "ERR|M5CT|\0");
+	  free(buffer);
+	  free(str);
+	  return result;
+	}
+	printf("correct %s\n",str);
+	result = malloc(8*sizeof(char));
+        strcpy(result, "correct\0");
+	printf("%s\n",str);
+	free(str);
+        free(buffer);
+        return result;
+      }
+      else{
+	//content error for msg 1 or msg3
+	result = malloc(10*sizeof(char));
+	if(msg_num == 1){
+	  strcpy(result, "ERR|M1CT|\0");
+	  free(str);
+	  free(buffer);
+	  return result;
+	}
+	else if(msg_num == 3){
+	  strcpy(result, "ERR|M3CT|\0");
+	  free(str);
+	  free(buffer);
+	  return result;
+	}
+      }
   }
+
+  //}
   else{
-    //missing msg type
+    //missing msg type REG| or ERR| then send format error for msg_num
+    result = malloc(10*sizeof(char));
+    if(msg_num == 1){
+      strcpy(result, "ERR|M1FT|\0");
+      free(buffer);
+      return result;
+    }
+    else if(msg_num == 3){
+      strcpy(result, "ERR|M3FT|\0");
+      free(buffer);
+      return result;
+    }
+    else if(msg_num == 5){
+      strcpy(result, "ERR|M5FT|\0");
+      free(buffer);
+      return result;
+    }
   }
-  */
+  free(buf);
 }
 
 int main(int argc, char * argv[]){ 
@@ -161,23 +329,14 @@ serverAddressInfo.sin_addr.s_addr = INADDR_ANY;
 
 
 if(bind(sockfd,(struct sockaddr *)&serverAddressInfo, sizeof(serverAddressInfo))<0){
-	
-		printf("error");
-	} 
+  printf("error");
+}
 
-//listen(sockfd,MAX_CUE);
-
-//clilen = sizeof(clientAddressInfo);
-/* should pass blank sock addre struct becuase we will need a place to store client                                                                      
-info */
-//newsockfd = accept(sockfd,(struct sockaddr *)&clientAddressInfo, &clilen);
-// int mode = 1;
+ char* res;
 /*infinite loop to for server to keep listening and accepting requests from clients */
-//buffer = (char*) malloc(25*sizeof(char));
-
 while(1){
-  
-				listen(sockfd,MAX_CUE); 
+  printf("Waiting for new client connection to start KKJ\n");
+  listen(sockfd,MAX_CUE); 
 
 				clilen = sizeof(clientAddressInfo); 
 
@@ -191,25 +350,70 @@ while(1){
 				n = write(newsockfd,buffer,21); //sending msg 0
 				printf("%s\n", buffer);
 				free(buffer); 
-				check(newsockfd, buffer, 20, 1); //receiving msg 1 who's there
-			        
+				res = check(newsockfd, buffer, 20, 1); //receiving msg 1 who's there
+				/* res == "close" means we received an error from client
+				   res == "correct" means we received what we expected so 
+				   we can send a regular response. 
+				   res == "ERR|....|" means
+				   we received an incorrectly formatted msg so we need to
+				   send/report an error to our client which is stored in res, so 
+				   simply compare first three chars of res with ERR
+				*/
+				if(strcmp(res, "close") == 0){
+				  //close(newsockfd);  //received an error from client, close connection & move-on
+				  free(res);
+				  close(newsockfd);
+				  continue;
+				}
+				else if(res[0] == 'E' && res[1] == 'R' && res[2] == 'R'){
+				  write(newsockfd, res, 9); //need to send an error to client
+				  printf("Incorrect message from client, sending error %s, closing connection\n", res);
+				  free(res);
+				  close(newsockfd);
+                                  continue;
+				}
+				
 				buffer = (char*) malloc(22*sizeof(char));
 				strcpy(buffer, "REG|13|JA Francisco.|\0");
 				n = write(newsockfd, buffer, 21); //sending msg 2
 				printf("%s\n", buffer);
 				free(buffer);
-				check(newsockfd, buffer, 26, 3); //receiving msg 3 JA Francisco, who?
-		        
+				res = check(newsockfd, buffer, 26, 3); //receiving msg 3 JA Francisco, who?
+			        if(strcmp(res, "close") == 0){
+                                  //close(newsockfd);  //received an error from client, close connection & move-on
+				  free(res);
+				  close(newsockfd);
+				  continue;
+                                }
+                                else if(res[0] == 'E' && res[1] == 'R' && res[2] == 'R'){
+                                  write(newsockfd, res, 9); //need to send an error to client
+				  printf("Incorrect message from client, sending error %s, closing connection\n", res);
+                                  free(res);
+				  close(newsockfd);
+                                  continue;
+				}
+				
 				buffer = (char*) malloc(28*sizeof(char));
 				strcpy(buffer,"REG|19|The Systems Master.|\0");
 				n = write(newsockfd,buffer,27); //sending msg 4
 				printf("%s\n", buffer);
 				free(buffer);
-				check(newsockfd, buffer, 256, 3); //receiving msg 5 expression of A/D/S
-				close(newsockfd);
-			       
+				res = check(newsockfd, buffer, 1024, 5); //receiving msg 5 expression of A/D/S
+				if(strcmp(res, "close") == 0){
+                                  //close(newsockfd);  //received an error from client, close connection & move-on
+				  free(res);
+				  close(newsockfd);
+				  continue;
+                                }
+                                else if(res[0] == 'E' && res[1] == 'R' && res[2] == 'R'){
+                                  write(newsockfd, res, 9); //need to send an error to client
+				  printf("Incorrect message from client, sending error %s, closing connection\n", res);
+                                  free(res);
+				  close(newsockfd);
+                                  continue;
+                                }
+				close(newsockfd);			       
  }			        
-// close(newsockfd);
  close(sockfd);
 }
  
