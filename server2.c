@@ -595,9 +595,17 @@ exit(1);
 
 //  read in IP address to connect to and port number from command line
 portno = atoi(argv[1]);
+if(portno < 5000 || portno > 64000){ 
+	printf("The port number does not fall within range \n"); 
+	exit(1);
+}
 
 
 sockfd = socket(AF_INET, SOCK_STREAM, 0); 
+	if(sockfd<0){ 
+		printf("error with scoket\n");
+		exit(1);
+	}
 
 bzero( (char *)&serverAddressInfo, sizeof(serverAddressInfo)); 
 
@@ -628,7 +636,12 @@ while(1){
 				*/
 				
   				newsockfd = accept(sockfd,(struct sockaddr *)&clientAddressInfo, &clilen);
-			   	buffer = (char*) malloc(22*sizeof(char));
+			   	if(newsockfd <0){ 
+						printf("error on accept \n");
+						exit(1);
+					}
+
+					buffer = (char*) malloc(22*sizeof(char));
 				strcpy(buffer, "REG|13|Knock, Knock.|\0");
 				n = write(newsockfd,buffer,21); //sending msg 0
 				printf("Knock, Knock.\n");
