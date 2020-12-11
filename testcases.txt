@@ -1,0 +1,72 @@
+test case 1:
+REG|13|Knock, Knock.|
+REG|12|Who's there?|
+REG|5|Tank.|
+REG|10|Tank, who?| 
+REG|15|Your'e welcome!|
+REG|4|ugh.|
+
+test case 2:
+REG|13|Knock, Knock.|
+REG|12|Who's therr?| 
+ERR|M1CT|
+
+test case 2: 
+REG|13|Knock, Knock.|
+REG|12|Who's there? 
+ERR|M1FT|
+
+test case 3:
+REG|13|Knock, Knock.|
+REG|10|Who's there?| 
+ERR|M1LN| 
+
+test case 4: 
+REG|13|Knock, Knock.|
+REG|12|Who's there?|
+REG|5|Tank.|
+REG|10|Tank, whw?| 
+ERR|M3CT|
+
+
+test case 5: 
+REG|13|Knock, Knock.|
+REG|12|Who's there?|
+REG|5|Tank.|
+REG|10|Tank, who? 
+ERR|M3FT| 
+
+test case 6: 
+REG|13|Knock, Knock.|
+REG|12|Who's there?|
+REG|5|Tank.|
+REG|9|Tank, who?| 
+ERR|M3LN| 
+
+test case 7: 
+REG|13|Knock, Knock.|
+REG|12|Who's there?|
+REG|5|Tank.|
+REG|10|Tank, who?| 
+REG|15|Your'e welcome!|
+REG|4|ugh| 
+ERR|M5CT|
+
+test case 8: 
+REG|13|Knock, Knock.|
+REG|12|Who's there?|
+REG|5|Tank.|
+REG|10|Tank, who?| 
+REG|15|Your'e welcome!|
+REG|4|ugh.
+ERR|M5FT|
+
+test case 9: 
+REG|13|Knock, Knock.|
+REG|12|Who's there?|
+REG|5|Tank.|
+REG|10|Tank, who?| 
+REG|15|Your'e welcome!|
+REG|3|ugh.|
+ERR|M5LN| 
+
