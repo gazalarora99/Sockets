@@ -1,27 +1,35 @@
-test case 1:
+Testcases represent the messages written to or read from the socket stream based on the current message state, they don't represent output.
+All messages are sent without a null terminator and without a new line character.
+Read will block if a message like REG|12|Who's there? is received as read will wait
+for the last byte that is a vertical bar '|' after reading 12 characters (msg length) in order to determine end of the message
+We do not have to take care of avoiding such a read block case as mentioned on Piazza post @329 by professor.
+When waiting for a new connection, server prints: Waiting for new client connection to start KKJ
+When closing a connection based on error messages received or sent, server outputs to inform closing connection.
+
+test case 1: Regular KKJ Joke
 REG|13|Knock, Knock.|
 REG|12|Who's there?|
 REG|5|Tank.|
 REG|10|Tank, who?| 
-REG|15|Your'e welcome!|
+REG|15|You're welcome!|
 REG|4|ugh.|
 
-test case 2:
+test case 2: Incorrect content msg1
 REG|13|Knock, Knock.|
 REG|12|Who's therr?| 
 ERR|M1CT|
 
-test case 2: 
+test case 2: Incorrect format msg1
 REG|13|Knock, Knock.|
-REG|12|Who's there? 
+REG|12|Who's there?hh 
 ERR|M1FT|
 
-test case 3:
+test case 3: Length doesn't match expected length for msg1
 REG|13|Knock, Knock.|
-REG|10|Who's there?| 
+REG|10|Who's?| 
 ERR|M1LN| 
 
-test case 4: 
+test case 4: Incorrect content msg3
 REG|13|Knock, Knock.|
 REG|12|Who's there?|
 REG|5|Tank.|
@@ -29,44 +37,49 @@ REG|10|Tank, whw?|
 ERR|M3CT|
 
 
-test case 5: 
+test case 5: Incorrect format msg3
 REG|13|Knock, Knock.|
 REG|12|Who's there?|
 REG|5|Tank.|
-REG|10|Tank, who? 
+REG|10|Tank, who?hh
 ERR|M3FT| 
 
-test case 6: 
+test case 6: Length doesn't match expected length for msg3
 REG|13|Knock, Knock.|
 REG|12|Who's there?|
 REG|5|Tank.|
-REG|9|Tank, who?| 
+REG|9|Tank, wh| 
 ERR|M3LN| 
 
-test case 7: 
+test case 7: Incorrect content msg5, missing punctuation
 REG|13|Knock, Knock.|
 REG|12|Who's there?|
 REG|5|Tank.|
 REG|10|Tank, who?| 
-REG|15|Your'e welcome!|
-REG|4|ugh| 
+REG|15|You're welcome!|
+REG|4|ughh| 
 ERR|M5CT|
 
-test case 8: 
+test case 8:Incorrect format msg5 
 REG|13|Knock, Knock.|
 REG|12|Who's there?|
 REG|5|Tank.|
 REG|10|Tank, who?| 
-REG|15|Your'e welcome!|
-REG|4|ugh.
+REG|15|You're welcome!|
+REG|4|ugh.hh
 ERR|M5FT|
 
-test case 9: 
+test case 9: Length doesn't match given length for msg5
 REG|13|Knock, Knock.|
 REG|12|Who's there?|
 REG|5|Tank.|
 REG|10|Tank, who?| 
-REG|15|Your'e welcome!|
-REG|3|ugh.|
+REG|15|You're welcome!|
+REG|3|ug|
 ERR|M5LN| 
 
+test case 10: Receiving an error from client, in case of buggy client which doesn't expect REG|13|Knock, Knock.|, instead expects something else
+REG|13|Knock, Knock.|
+ERR|M0CT|
+Received error ERR|M0CT| from client, closing connection
+Waiting for new client connection to start KKJ
